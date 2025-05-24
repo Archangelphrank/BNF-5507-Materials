@@ -7,7 +7,12 @@ version = "0.1.0"
 [tasks]
 
 [dependencies]
-python = ">=3.13.3,<3.14"
+python = ">=3.13.3"
 matplotlib = ">=3.10.3,<4"
 seaborn = ">=0.13.2,<0.14"
 ipykernel = ">=6.29.5,<7"
+numpy = ">=2.2.5,<3"
+scikit-learn = ">=1.6.1,<2"
+pandas = ">=2.2.3,<3"
+numexpr = ">=2.10.2,<3"
+scipy = ">=1.15.2,<2"

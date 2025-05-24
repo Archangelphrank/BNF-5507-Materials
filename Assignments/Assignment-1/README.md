@@ -1,0 +1,1 @@
+- This project focuses on cleaning and preprocessing messy datasets using object-oriented Python scripts.
