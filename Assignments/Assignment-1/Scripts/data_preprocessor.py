@@ -1,44 +1,52 @@
 import pandas as pd
 import numpy as np
-from scipy import stats
+import scipy.stats as stats
+from sklearn.preprocessing import LabelEncoder
 
-def process(data):
-    """
-    Process the data by removing duplicates, fixing inconsistent entries,
-    checking for outliers, and imputing missing values.
-    """
+class DataPreprocessor:
+    def __init__(self):
+        pass  # No arguments needed during initialization
 
-    # Remove duplicates
-    data = data.drop_duplicates()
+    def remove_duplicates(self, df):
+        """Removes duplicate rows."""
+        return df.drop_duplicates()
 
-    # Fix inconsistent entries in 'sex' column
-    if 'sex' in data.columns:
-        data.loc[:,'sex'] = data['sex'].astype(str).str.strip().str.lower().map({'female': 'female', 'f': 'female', 'male': 'male', 'm': 'male'})
+    def fix_format(self, df):
+        """Standardizes categorical entries while preserving male and female distinctions."""
+        df['sex'] = df['sex'].astype(str).str.strip().str.lower()
 
-    # Detect and remove outliers using Z-score
-    numeric_cols = data.select_dtypes(include=[np.number]).columns
-    z_scores = np.abs(stats.zscore(data[numeric_cols]))
-    data = data[~(z_scores > 3).any(axis=1)]
+        # Mapping common variations to 'male' or 'female'
+        df['sex'] = df['sex'].replace({
+            'f': 'female', 'femalee': 'female', 'fem': 'female', 'woman': 'female',
+            'm': 'male', 'malee': 'male', 'mal': 'male', 'man': 'male'
+        })
+        return df
 
-    # Identify missing values
-    missing_data = data.isnull().sum()
-    print("Missing values:\n", missing_data)
+    def handle_outliers(self, df):
+        """Identifies and removes outliers using Z-score."""
+        outliers = np.abs(stats.zscore(df.select_dtypes(include=[np.number]))) > 3
+        df.loc[outliers.any(axis=1), 'tprc'] = np.mean(df['tprc'])
+        return df
 
-    # Impute missing values (optimized approach)
-    data[numeric_cols] = data[numeric_cols].apply(lambda col: col.fillna(col.mean()))
+    def handle_missing_values(self, df):
+        """Imputes missing values."""
+        df['age'].fillna(df['age'].mean(), inplace=True)
+        df['embarked'].fillna(df['embarked'].mode()[0], inplace=True)
+        df.dropna(inplace=True)
+        return df
 
-    categorical_cols = data.select_dtypes(include=['object']).columns
-    for col in categorical_cols:
-        data[col].fillna(data[col].mode()[0], inplace=True)
+    def encode_categorical(self, df):
+        """Encodes categorical variables using Label Encoding."""
+        le = LabelEncoder()
+        df['sex'] = le.fit_transform(df['sex'])
+        df['embarked'] = le.fit_transform(df['embarked'])
+        return df
 
-    # Drop rows that still have missing values
-    data.dropna(inplace=True)
-
-    # Save the cleaned dataset
-    data.to_csv("cleaned_data.csv", index=False)
-    print("Cleaned data saved as 'cleaned_data.csv'")
-
-    # Display final cleaned dataset preview
-    print("Cleaned data preview:\n", data.head())
-
-    return data
+    def transform(self, df):
+        """Applies all preprocessing steps sequentially."""
+        df = self.remove_duplicates(df)
+        df = self.fix_format(df)
+        df = self.handle_outliers(df)
+        df = self.handle_missing_values(df)
+        df = self.encode_categorical(df)
+        return df
